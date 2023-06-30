@@ -166,6 +166,7 @@ def test_triangle(phil):
         pygame.display.update()
 
 
+# renders texture!
 def test_triangle2():
     p1 = (20, 10)
     uv1 = (100, 10)
