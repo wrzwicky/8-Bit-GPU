@@ -7,15 +7,16 @@ from pygame.locals import QUIT
 
 
 class DDA:
-
-    def __init__(self, w, n, d):
-        """start number: whole part, numer, denom"""
-        self.w = w
-        self.n = n
-        self.d = d
+    """Helper that increments a rational value by another rational value."""
+  
+    def __init__(self, whole, numer, denom):
+        """Initialize with starting value w + n/d."""
+        self.w = whole
+        self.n = numer
+        self.d = denom
 
     def add(self, inc):
-        """add inc/denom, return w"""
+        """Add inc/denom to current value, return whole part (i.e. floor(value))."""
         self.n += inc
         if self.n >= self.d:
             self.w += 1
@@ -26,30 +27,14 @@ class DDA:
         return self.w
 
 
-class Tracker:
-
-    def __init__(self):
-        self.incr = 0
-        self.dda = None
-
-    def step(self):
-        return self.dda.add(self.incr)
-
-    @classmethod
-    def make(cls, ref_start, ref_end, target_start, target_end):
-        numer = target_end - target_start
-        denom = ref_end - ref_start
-        t = Tracker()
-        t.incr = numer
-        t.dda = DDA(target_start, denom / 2, denom)
-        return t
-
 class TrackXY:
+    """Pair of DDA objects to auto-increment 2 values."""
+
     @classmethod
-    def make(cls, ref_start, ref_end,
-             x_start, x_end, y_start, y_end):
+    def make(cls, ref_start, ref_end, x_start, x_end, y_start, y_end):
+        """ref is how many steps; x/y is range those will cover over 'ref' steps"""
         t = TrackXY()
-               
+
         numer = x_end - x_start
         denom = ref_end - ref_start
         t.xincr = numer
@@ -59,18 +44,19 @@ class TrackXY:
         denom = ref_end - ref_start
         t.yincr = numer
         t.ydda = DDA(y_start, denom / 2, denom)
-               
+
         return t
-               
+
     def step(self):
         self.xdda.add(self.xincr)
         self.ydda.add(self.yincr)
-      
+
     def coord(self):
-      return (self.xdda.w, self.ydda.w)
+        return (self.xdda.w, self.ydda.w)
 
 
 def draw_source(x, y, w, h):
+    # create an image to use as texture
     c1 = (0, 255, 0)
     c2 = (0, 0, 255)
     for i in range(0, int(min(w / 2, h / 2)), 2):
@@ -82,6 +68,8 @@ def draw_source(x, y, w, h):
 
 
 def test_rect():
+    ## draw a rotated and scaled rectangle
+  
     # pos of UL corner
     origx = 100
     origy = 10
@@ -121,6 +109,8 @@ def test_rect():
 
 
 def test_triangle(phil):
+    ## draw a flat-shaded triangle
+  
     p1 = (20, 10)
     p2 = (50, 60)
     p3 = (10, 110)
@@ -166,8 +156,9 @@ def test_triangle(phil):
         pygame.display.update()
 
 
-# renders texture!
 def test_triangle2():
+    ## draw triangle, textured by the thing drawn by draw_source
+  
     p1 = (20, 10)
     uv1 = (100, 10)
     p2 = (50, 60)
@@ -186,20 +177,17 @@ def test_triangle2():
 
     #source
     #  left will step once per p1..p3
-    src_left = TrackXY.make(p1[1], p3[1],
-                            uv1[0], uv3[0], uv1[1], uv3[1])
+    src_left = TrackXY.make(p1[1], p3[1], uv1[0], uv3[0], uv1[1], uv3[1])
     #  right once per p1..p2
-    src_right = TrackXY.make(p1[1], p2[1],
-                            uv1[0], uv2[0], uv1[1], uv2[1])
+    src_right = TrackXY.make(p1[1], p2[1], uv1[0], uv2[0], uv1[1], uv2[1])
 
     for y in range(p1[1], p2[1]):
-        src_line = TrackXY.make(
-          dest_left.xdda.w, dest_right.xdda.w,
-          src_left.xdda.w, src_right.xdda.w,
-          src_left.ydda.w, src_right.ydda.w)
+        src_line = TrackXY.make(dest_left.xdda.w, dest_right.xdda.w,
+                                src_left.xdda.w, src_right.xdda.w,
+                                src_left.ydda.w, src_right.ydda.w)
         src_left.step()
         src_right.step()
-      
+
         for x in range(dest_left.xdda.w, dest_right.xdda.w):
             c = screen.get_at(src_line.coord())
             #screen.set_at(src_line.coord(), pygame.Color('red'))
@@ -213,14 +201,12 @@ def test_triangle2():
     #second right
     dest_right = TrackXY.make(p2[1], p3[1], p2[0], p3[0], p2[1], p3[1])
 
-    src_right = TrackXY.make(p2[1], p3[1],
-                          uv2[0], uv3[0], uv2[1], uv3[1])
+    src_right = TrackXY.make(p2[1], p3[1], uv2[0], uv3[0], uv2[1], uv3[1])
 
     for y in range(p2[1], p3[1]):
-        src_line = TrackXY.make(
-          dest_left.xdda.w, dest_right.xdda.w,
-          src_left.xdda.w, src_right.xdda.w,
-          src_left.ydda.w, src_right.ydda.w)
+        src_line = TrackXY.make(dest_left.xdda.w, dest_right.xdda.w,
+                                src_left.xdda.w, src_right.xdda.w,
+                                src_left.ydda.w, src_right.ydda.w)
         src_left.step()
         src_right.step()
 
